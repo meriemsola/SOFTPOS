@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:hce_emv/data/services/backend_service.dart'; // Remplacer BackendSimulationService par BackendService
+import 'package:hce_emv/data/services/backend_service.dart'; // Import du backend pour envoyer les données
 import 'package:hce_emv/presentation/widgets/credit_card_widget.dart';
 import 'package:hce_emv/presentation/widgets/loader_widget.dart';
 
 class CardResultScreen extends StatefulWidget {
-  final String encryptedCardData;
+  final String pan;
+  final String expiry;
+  final String cvv;
 
-  const CardResultScreen({super.key, required this.encryptedCardData});
+  const CardResultScreen({
+    super.key,
+    required this.pan,
+    required this.expiry,
+    required this.cvv,
+  });
 
   @override
   State<CardResultScreen> createState() => _CardResultScreenState();
@@ -22,11 +29,13 @@ class _CardResultScreenState extends State<CardResultScreen> {
     _simulateBackendCall();
   }
 
+  // Fonction pour simuler l'appel au backend avec les données en clair
   Future<void> _simulateBackendCall() async {
     try {
       final response = await BackendService.verifyCard(
-        // Remplacer BackendSimulationService par BackendService
-        widget.encryptedCardData,
+        pan: widget.pan,
+        expiry: widget.expiry,
+        cvv: widget.cvv,
       );
       if (mounted) {
         setState(() {
@@ -36,7 +45,6 @@ class _CardResultScreenState extends State<CardResultScreen> {
       }
     } catch (e) {
       print('Erreur backend: $e');
-      // En cas d'erreur, sortir du chargement aussi
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -45,6 +53,7 @@ class _CardResultScreenState extends State<CardResultScreen> {
     }
   }
 
+  // Masquage du PAN pour l'affichage
   String _maskPan(String pan) {
     if (pan.length < 16) return pan;
     return '${pan.substring(0, 6)}•• •••• ${pan.substring(12)}';

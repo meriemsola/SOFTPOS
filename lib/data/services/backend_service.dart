@@ -1,17 +1,34 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http; // Import du package HTTP
+import 'package:hce_emv/data/services/card_encryption_service.dart'; // Import du service de cryptage
 
 class BackendService {
-  static Future<Map<String, dynamic>> verifyCard(String encryptedData) async {
+  static Future<Map<String, dynamic>> verifyCard({
+    required String pan,
+    required String expiry,
+    required String cvv,
+  }) async {
     try {
-      // Remplacez par l'URL de ton API backend
-      final Uri apiUrl = Uri.parse('https://ton-backend.com/api/verify-card');
+      // Crypter le PAN et le CVV séparément
+      String encryptedPan = CardEncryptionService.encryptPan(
+        pan,
+      ); // Crypter le PAN
+      String encryptedCvv = CardEncryptionService.encryptCvv(
+        cvv,
+      ); // Crypter le CVV
 
-      // Envoie des données au backend (en tant que POST)
+      // Remplacez par l'URL de ton API backend
+      final Uri apiUrl = Uri.parse('http://localhost:9000/api/cards');
+
+      // Envoie des données cryptées au backend (en tant que POST)
       final response = await http.post(
         apiUrl,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'encryptedData': encryptedData}),
+        body: jsonEncode({
+          'pan': encryptedPan, // PAN crypté
+          'expiryDate': expiry, // Expiry en clair
+          'cvv': encryptedCvv, // CVV crypté
+        }),
       );
 
       // Vérifie si la réponse est un succès

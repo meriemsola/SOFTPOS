@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hce_emv/data/services/card_encryption_service.dart'; // Ajout de l'import du cryptage
-import 'package:hce_emv/presentation/screens/card_result_screen.dart'; // Ajout de l'import de l'écran de résultat
+import 'package:hce_emv/data/services/backend_service.dart'; // Import BackendService
+import 'package:hce_emv/presentation/screens/card_result_screen.dart'; // Import CardResultScreen
 
 class CardInputScreen extends StatefulWidget {
   const CardInputScreen({super.key});
@@ -23,34 +23,45 @@ class _CardInputScreenState extends State<CardInputScreen> {
     super.dispose();
   }
 
+  // Fonction pour valider et envoyer les données au backend
   void _validateAndProceed() {
     if (_formKey.currentState?.validate() ?? false) {
       String pan = _panController.text;
       String expiry = _expiryController.text;
       String cvv = _cvvController.text;
 
-      // 1. Crypter les données
-      String encryptedData = CardEncryptionService.encryptCardData(
-        pan: pan,
-        expiry: expiry,
-        cvv: cvv,
-      );
-
-      // 2. Naviguer vers l'écran de résultat
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => CardResultScreen(encryptedCardData: encryptedData),
-        ),
-      );
+      // Envoi des données au backend sans cryptage
+      BackendService.verifyCard(pan: pan, expiry: expiry, cvv: cvv)
+          .then((response) {
+            if (response['status'] == 'OK') {
+              // Si la réponse est OK, naviguer vers l'écran CardResultScreen avec les données
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => CardResultScreen(
+                        pan: pan, // Passer les données claires
+                        expiry: expiry,
+                        cvv: cvv,
+                      ),
+                ),
+              );
+            } else {
+              // En cas d'erreur du backend, afficher un message
+              print('Erreur du backend : ${response['message']}');
+            }
+          })
+          .catchError((e) {
+            print('Erreur lors de l\'envoi des données : $e');
+          });
     }
   }
 
+  // Validation des champs
   String? _validatePan(String? value) {
     if (value == null || value.isEmpty) return 'Entrez un numéro de carte';
-    if (!RegExp(r'^\d{13,19}$').hasMatch(value)) {
-      return 'Le PAN doit contenir 13 à 19 chiffres';
+    if (!RegExp(r'^\d{16}$').hasMatch(value)) {
+      return 'Le PAN doit contenir 16 chiffres';
     }
     return null;
   }
