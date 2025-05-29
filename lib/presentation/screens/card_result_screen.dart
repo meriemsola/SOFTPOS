@@ -1,82 +1,96 @@
 import 'package:flutter/material.dart';
-import 'package:hce_emv/data/services/backend_service.dart'; // Import du backend pour envoyer les données
-import 'package:hce_emv/presentation/widgets/credit_card_widget.dart';
-import 'package:hce_emv/presentation/widgets/loader_widget.dart';
+import 'package:hce_emv/presentation/screens/credit_card_widget.dart';
+import 'package:hce_emv/presentation/screens/qr_code_scanner_screen.dart'; // Importer la page du QR scanner
 
-class CardResultScreen extends StatefulWidget {
-  final String pan;
-  final String expiry;
-  final String cvv;
-
-  const CardResultScreen({
-    super.key,
-    required this.pan,
-    required this.expiry,
-    required this.cvv,
-  });
-
-  @override
-  State<CardResultScreen> createState() => _CardResultScreenState();
-}
-
-class _CardResultScreenState extends State<CardResultScreen> {
-  bool _isLoading = true;
-  Map<String, dynamic>? _cardInfo;
-
-  @override
-  void initState() {
-    super.initState();
-    _simulateBackendCall();
-  }
-
-  // Fonction pour simuler l'appel au backend avec les données en clair
-  Future<void> _simulateBackendCall() async {
-    try {
-      final response = await BackendService.verifyCard(
-        pan: widget.pan,
-        expiry: widget.expiry,
-        cvv: widget.cvv,
-      );
-      if (mounted) {
-        setState(() {
-          _cardInfo = response;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Erreur backend: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  // Masquage du PAN pour l'affichage
-  String _maskPan(String pan) {
-    if (pan.length < 16) return pan;
-    return '${pan.substring(0, 6)}•• •••• ${pan.substring(12)}';
-  }
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final examplePan = '1234567812345678';
+    final exampleExpiry = '1225';
+    final exampleCvv = '123';
+    final exampleName = 'Sabrina 💙';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Votre carte bancaire')),
-      body:
-          _isLoading
-              ? const LoaderWidget()
-              : _cardInfo == null
-              ? const Center(child: Text('Erreur de chargement'))
-              : Center(
-                child: CreditCardWidget(
-                  maskedPan: _maskPan(_cardInfo!['pan']),
-                  expiryDate: _cardInfo!['expiry'],
-                  cvv: _cardInfo!['cvv'],
-                  cardHolderName:
-                      '${_cardInfo!['first_name']} ${_cardInfo!['last_name']}',
+      appBar: AppBar(title: const Text("HB Technologies Pay")),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Affichage de la carte
+            CreditCardWidget(
+              maskedPan: examplePan,
+              expiryDate: exampleExpiry,
+              cvv: exampleCvv,
+              cardHolderName: exampleName,
+            ),
+            const SizedBox(height: 30),
+
+            // Le bouton "Payer"
+            ElevatedButton.icon(
+              onPressed: () {
+                _showPaymentOptions(context);
+              },
+              icon: const Icon(Icons.payment),
+              label: const Text("Payer"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Fonction pour afficher la petite fenêtre de choix entre NFC ou QR Code
+  void _showPaymentOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Choisissez un mode de paiement"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.qr_code, color: Colors.indigo),
+                title: const Text("Payer par QR Code"),
+                onTap: () {
+                  // Logique pour payer avec QR Code
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              QRCodeScannerScreen(), // Ouvre la page du scanner QR Code
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.nfc, color: Colors.indigo),
+                title: const Text("Payer par NFC"),
+                onTap: () {
+                  // Logique pour payer avec NFC
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Paiement via NFC")),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
