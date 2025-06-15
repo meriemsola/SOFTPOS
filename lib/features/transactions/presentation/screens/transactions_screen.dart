@@ -1,7 +1,6 @@
-// lib/features/transactions/presentation/screens/transactions_screen.dart
 import 'package:hce_emv/core/extensions/context_extensions.dart';
-import 'package:hce_emv/features/rewards/domain/models/reward.dart';
-import 'package:hce_emv/features/rewards/presentation/controllers/user_rewards_controller.dart';
+// import 'package:hce_emv/features/rewards/domain/models/reward.dart';
+// import 'package:hce_emv/features/rewards/presentation/controllers/user_rewards_controller.dart';
 import 'package:hce_emv/features/transactions/domain/models/transaction.dart';
 import 'package:hce_emv/features/transactions/presentation/controllers/transactions_controller.dart';
 import 'package:flutter/material.dart';
@@ -10,13 +9,12 @@ import 'package:hce_emv/shared/presentation/widgets/skeletons.dart';
 import 'package:hce_emv/shared/presentation/widgets/gradient_background.dart';
 import '../widgets/transaction_card.dart';
 import '../widgets/transaction_filter_bar.dart';
-import '../widgets/reward_filter_bar.dart';
+// import '../widgets/reward_filter_bar.dart';
+// import 'package:hce_emv/features/rewards/presentation/screens/rewards_screen.dart' show EnhancedRewardListCard, EnhancedRewardDetailsSheet;
 import 'package:intl/intl.dart';
 import 'package:hce_emv/theme/app_colors.dart';
 import 'package:hce_emv/core/utils/helpers/currency_helper.dart';
 import 'package:hce_emv/shared/providers/global_providers.dart';
-import 'package:hce_emv/features/rewards/presentation/screens/rewards_screen.dart'
-    show EnhancedRewardListCard, EnhancedRewardDetailsSheet;
 
 enum TransactionSortBy {
   dateDesc,
@@ -44,9 +42,7 @@ class TransactionsScreen extends ConsumerStatefulWidget {
   ConsumerState<TransactionsScreen> createState() => _TransactionsScreenState();
 }
 
-class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   TransactionSortBy _sortBy = TransactionSortBy.dateDesc;
@@ -66,7 +62,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
@@ -76,7 +71,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -126,7 +120,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
               if (_customDateRange == null) return true;
               return tx.timestamp.isAfter(_customDateRange!.start) &&
                   tx.timestamp.isBefore(
-                    _customDateRange!.end.add(Duration(days: 1)),
+                    _customDateRange!.end.add(const Duration(days: 1)),
                   );
           }
         }).toList();
@@ -155,7 +149,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
         filtered.sort((a, b) => b.amount.abs().compareTo(a.amount.abs()));
         break;
       case TransactionSortBy.amountAsc:
-        filtered.sort((a, b) => a.amount.abs().compareTo(b.amount.abs()));
+        filtered.sort((a, b) => a.amount.abs().compareTo(a.amount.abs()));
         break;
       case TransactionSortBy.referenceAsc:
         filtered.sort((a, b) => a.referenceNumber.compareTo(b.referenceNumber));
@@ -172,20 +166,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
     List<Transaction> transactions,
   ) {
     final Map<String, List<Transaction>> grouped = {};
-    final now = DateTime.now();
-
     for (final transaction in transactions) {
       String key;
-      final difference = now.difference(transaction.timestamp).inDays;
+      final now = DateTime.now();
+      final difference = now.difference(transaction.timestamp!).inDays;
 
       if (difference == 0) {
         key = 'Today';
       } else if (difference == 1) {
         key = 'Yesterday';
       } else if (difference < 7) {
-        key = DateFormat('EEEE').format(transaction.timestamp);
+        key = DateFormat('EEEE').format(transaction.timestamp!);
       } else {
-        key = DateFormat('MMM dd, yyyy').format(transaction.timestamp);
+        key = DateFormat('MMM dd, yyyy').format(transaction.timestamp!);
       }
 
       grouped.putIfAbsent(key, () => []).add(transaction);
@@ -202,7 +195,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final transactionsAsync = ref.watch(transactionsControllerProvider);
-    final userRewardsAsync = ref.watch(userRewardsControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -227,7 +219,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
             tooltip: 'Refresh',
             onPressed: () async {
               await ref.read(transactionsControllerProvider.notifier).refresh();
-              await ref.read(userRewardsControllerProvider.notifier).refresh();
+              // await ref.read(userRewardsControllerProvider.notifier).refresh();
             },
           ),
         ],
@@ -237,86 +229,22 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      borderRadius: BorderRadius.circular(25),
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primary.withOpacity(0.8),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    labelColor: Colors.white,
-                    unselectedLabelColor:
-                        isDark ? Colors.white70 : Colors.black54,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-                    unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
-                    tabs: const [
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.receipt_long, size: 18),
-                            SizedBox(width: 8),
-                            Text('Transactions'),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.card_giftcard, size: 18),
-                            SizedBox(width: 8),
-                            Text('Rewards'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 8,
                 ),
-                child:
-                    _tabController.index == 0
-                        ? TransactionFilterBar(controller: _searchController)
-                        : RewardFilterBar(controller: _searchController),
+                child: TransactionFilterBar(controller: _searchController),
+                /*
+                child: _tabController.index == 0
+                    ? TransactionFilterBar(controller: _searchController)
+                    : RewardFilterBar(controller: _searchController),
+                */
               ),
 
               // Filter Options (when expanded)
-              if (_showFilters && _tabController.index == 0)
+              if (_showFilters)
                 Container(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -325,7 +253,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: isDark ? Colors.black12 : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -467,427 +395,409 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
                 ),
 
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // Transactions Tab
-                    transactionsAsync.when(
-                      data: (transactions) {
-                        _updateFilteredAndGrouped(transactions);
-                        final filtered = _filteredTransactions;
-                        final totalAmount = _calculateTotalAmount(filtered);
-                        if (filtered.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                child: transactionsAsync.when(
+                  data: (transactions) {
+                    _updateFilteredAndGrouped(transactions);
+                    final filtered = _filteredTransactions;
+                    final totalAmount = _calculateTotalAmount(filtered);
+                    if (filtered.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long,
+                              size: 64,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No transactions found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            if (_searchQuery.isNotEmpty ||
+                                _filter != TransactionFilter.all)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchQuery = '';
+                                      _searchController.clear();
+                                      _filter = TransactionFilter.all;
+                                      _customDateRange = null;
+                                    });
+                                  },
+                                  child: const Text('Clear filters'),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final groupedTransactions = _groupedTransactions;
+
+                    return Column(
+                      children: [
+                        // Summary Card
+                        if (filtered.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.primary.withOpacity(0.1),
+                                  AppColors.secondary.withOpacity(0.05),
+                                ],
+                              ),
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(16),
+                              ),
+                              border: Border.all(
+                                color: AppColors.primary.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Icon(
-                                  Icons.receipt_long,
-                                  size: 64,
-                                  color: Colors.grey.shade400,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No transactions found',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                if (_searchQuery.isNotEmpty ||
-                                    _filter != TransactionFilter.all)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: TextButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _searchQuery = '';
-                                          _searchController.clear();
-                                          _filter = TransactionFilter.all;
-                                          _customDateRange = null;
-                                        });
-                                      },
-                                      child: const Text('Clear filters'),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${filtered.length} Transaction${filtered.length == 1 ? '' : 's'}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
+                                    Text(
+                                      _getFilterDescription(),
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Total Amount',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      CurrencyHelper.format(totalAmount),
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
-                          );
-                        }
+                          ),
 
-                        final groupedTransactions = _groupedTransactions;
+                        // Grouped Transaction List
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: groupedTransactions.length,
+                            itemBuilder: (context, index) {
+                              final entry = groupedTransactions.entries
+                                  .elementAt(index);
+                              final dateKey = entry.key;
+                              final dayTransactions = entry.value;
+                              final dayTotal = _calculateTotalAmount(
+                                dayTransactions,
+                              );
 
-                        return Column(
-                          children: [
-                            // Summary Card
-                            if (filtered.isNotEmpty)
-                              Container(
-                                margin: const EdgeInsets.all(16),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.primary.withOpacity(0.1),
-                                      AppColors.secondary.withOpacity(0.05),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: AppColors.primary.withOpacity(0.2),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Date Header
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          '${filtered.length} Transaction${filtered.length == 1 ? '' : 's'}',
+                                          dateKey,
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                         Text(
-                                          _getFilterDescription(),
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          'Total Amount',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                        Text(
-                                          CurrencyHelper.format(totalAmount),
+                                          CurrencyHelper.format(dayTotal),
                                           style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
                                             color: Colors.red,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ],
+                                  ),
+
+                                  // Day's Transactions
+                                  ...dayTransactions.asMap().entries.map((
+                                    entry,
+                                  ) {
+                                    final i = entry.key;
+                                    final tx = entry.value;
+                                    return Padding(
+                                      key: ValueKey(tx.id),
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: TransactionCard(
+                                        transaction: tx,
+                                        onTap:
+                                            () => _showTransactionDetails(
+                                              context,
+                                              tx,
+                                            ),
+                                        animationIndex: i < 10 ? i : null,
+                                      ),
+                                    );
+                                  }),
+
+                                  const SizedBox(height: 8),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                  loading:
+                      () => ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: 6,
+                        itemBuilder:
+                            (context, index) => const Padding(
+                              padding: EdgeInsets.only(bottom: 12),
+                              child: SkeletonTransactionItem(),
+                            ),
+                      ),
+                  error:
+                      (error, stack) => Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.red.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text('Error loading transactions'),
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed:
+                                  () => ref.refresh(
+                                    transactionsControllerProvider,
+                                  ),
+                              child: const Text('Try Again'),
+                            ),
+                          ],
+                        ),
+                      ),
+                ),
+                /*
+                // Rewards Tab
+                userRewardsAsync.when(
+                  data: (rewards) {
+                    // Filter rewards by search query (name or category)
+                    final filteredRewards = _searchQuery.isEmpty
+                        ? rewards
+                        : rewards.where((reward) {
+                            final query = _searchQuery.toLowerCase();
+                            return reward.name.toLowerCase().contains(
+                                  query,
+                                ) ||
+                                reward.category.toLowerCase().contains(
+                                  query,
+                                );
+                          }).toList();
+                    if (filteredRewards.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.card_giftcard,
+                              size: 64,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isEmpty
+                                  ? 'No claimed rewards yet'
+                                  : 'No rewards found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            if (_searchQuery.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: TextButton(
+                                  onPressed: () {
+                                    _searchController.clear();
+                                  },
+                                  child: const Text('Clear search'),
                                 ),
                               ),
+                          ],
+                        ),
+                      );
+                    }
 
-                            // Grouped Transaction List
-                            Expanded(
-                              child: ListView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                    // Group rewards by category (like in rewards_screen.dart)
+                    final groupedRewards = <String, List<Reward>>{};
+                    for (final reward in filteredRewards) {
+                      if (groupedRewards.containsKey(reward.category)) {
+                        groupedRewards[reward.category]!.add(reward);
+                      } else {
+                        groupedRewards[reward.category] = [reward];
+                      }
+                    }
+                    final categories = groupedRewards.keys.toList()..sort();
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: categories.length,
+                      itemBuilder: (context, categoryIndex) {
+                        final category = categories[categoryIndex];
+                        final categoryRewards = groupedRewards[category]!;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (categoryIndex > 0)
+                              const SizedBox(height: 24),
+                            // Category header (copied from rewards_screen.dart)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary.withOpacity(0.1),
+                                    AppColors.primary.withOpacity(0.05),
+                                  ],
                                 ),
-                                itemCount: groupedTransactions.length,
-                                itemBuilder: (context, index) {
-                                  final entry = groupedTransactions.entries
-                                      .elementAt(index);
-                                  final dateKey = entry.key;
-                                  final dayTransactions = entry.value;
-                                  final dayTotal = _calculateTotalAmount(
-                                    dayTransactions,
-                                  );
-
-                                  return Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Date Header
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 12,
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              dateKey,
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            Text(
-                                              CurrencyHelper.format(dayTotal),
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.red,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _getCategoryIcon(category),
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    category,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(
+                                        12,
                                       ),
-
-                                      // Day's Transactions
-                                      ...dayTransactions.asMap().entries.map((
-                                        entry,
-                                      ) {
-                                        final i = entry.key;
-                                        final tx = entry.value;
-                                        return Padding(
-                                          key: ValueKey(tx.id),
-                                          padding: const EdgeInsets.only(
-                                            bottom: 8,
-                                          ),
-                                          child: TransactionCard(
-                                            transaction: tx,
-                                            onTap:
-                                                () => _showTransactionDetails(
-                                                  context,
-                                                  tx,
-                                                ),
-                                            animationIndex: i < 10 ? i : null,
-                                          ),
-                                        );
-                                      }),
-
-                                      const SizedBox(height: 8),
-                                    ],
-                                  );
-                                },
+                                    ),
+                                    child: Text(
+                                      categoryRewards.length.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ...categoryRewards.map(
+                              (reward) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: EnhancedRewardListCard(
+                                  reward: reward,
+                                  isRedeemed: true,
+                                  onTap: () => _showEnhancedRewardDetails(
+                                    context,
+                                    reward,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         );
                       },
-                      loading:
-                          () => ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: 6,
-                            itemBuilder:
-                                (context, index) => const Padding(
-                                  padding: EdgeInsets.only(bottom: 12),
-                                  child: SkeletonTransactionItem(),
-                                ),
-                          ),
-                      error:
-                          (error, stack) => Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  size: 64,
-                                  color: Colors.red.shade300,
-                                ),
-                                const SizedBox(height: 16),
-                                Text('Error loading transactions'),
-                                const SizedBox(height: 8),
-                                TextButton(
-                                  onPressed:
-                                      () => ref.refresh(
-                                        transactionsControllerProvider,
-                                      ),
-                                  child: const Text('Try Again'),
-                                ),
-                              ],
-                            ),
-                          ),
+                    );
+                  },
+                  loading: () => ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: 4,
+                    itemBuilder: (context, index) => const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: SkeletonRewardListItem(),
                     ),
-
-                    // Rewards Tab
-                    userRewardsAsync.when(
-                      data: (rewards) {
-                        // Filter rewards by search query (name or category)
-                        final filteredRewards =
-                            _searchQuery.isEmpty
-                                ? rewards
-                                : rewards.where((reward) {
-                                  final query = _searchQuery.toLowerCase();
-                                  return reward.name.toLowerCase().contains(
-                                        query,
-                                      ) ||
-                                      reward.category.toLowerCase().contains(
-                                        query,
-                                      );
-                                }).toList();
-                        if (filteredRewards.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.card_giftcard,
-                                  size: 64,
-                                  color: Colors.grey.shade400,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _searchQuery.isEmpty
-                                      ? 'No claimed rewards yet'
-                                      : 'No rewards found',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                if (_searchQuery.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: TextButton(
-                                      onPressed: () {
-                                        _searchController.clear();
-                                      },
-                                      child: const Text('Clear search'),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        // Group rewards by category (like in rewards_screen.dart)
-                        final groupedRewards = <String, List<Reward>>{};
-                        for (final reward in filteredRewards) {
-                          if (groupedRewards.containsKey(reward.category)) {
-                            groupedRewards[reward.category]!.add(reward);
-                          } else {
-                            groupedRewards[reward.category] = [reward];
-                          }
-                        }
-                        final categories = groupedRewards.keys.toList()..sort();
-
-                        return ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: categories.length,
-                          itemBuilder: (context, categoryIndex) {
-                            final category = categories[categoryIndex];
-                            final categoryRewards = groupedRewards[category]!;
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (categoryIndex > 0)
-                                  const SizedBox(height: 24),
-                                // Category header (copied from rewards_screen.dart)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.primary.withOpacity(0.1),
-                                        AppColors.primary.withOpacity(0.05),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: AppColors.primary.withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        _getCategoryIcon(category),
-                                        color: AppColors.primary,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        category,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          categoryRewards.length.toString(),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                ...categoryRewards.map(
-                                  (reward) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: EnhancedRewardListCard(
-                                      reward: reward,
-                                      isRedeemed: true,
-                                      onTap:
-                                          () => _showEnhancedRewardDetails(
-                                            context,
-                                            reward,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                      loading:
-                          () => ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: 4,
-                            itemBuilder:
-                                (context, index) => const Padding(
-                                  padding: EdgeInsets.only(bottom: 12),
-                                  child: SkeletonRewardListItem(),
-                                ),
-                          ),
-                      error:
-                          (error, stack) => Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  size: 64,
-                                  color: Colors.red.shade300,
-                                ),
-                                const SizedBox(height: 16),
-                                Text('Error loading rewards'),
-                                const SizedBox(height: 8),
-                                TextButton(
-                                  onPressed:
-                                      () => ref.refresh(
-                                        userRewardsControllerProvider,
-                                      ),
-                                  child: const Text('Try Again'),
-                                ),
-                              ],
-                            ),
-                          ),
+                  ),
+                  error: (error, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text('Error loading rewards'),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () =>
+                              ref.refresh(userRewardsControllerProvider),
+                          child: const Text('Try Again'),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
+                */
               ),
             ],
           ),
@@ -977,6 +887,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
     );
   }
 
+  /*
   void _showEnhancedRewardDetails(BuildContext context, Reward reward) {
     showModalBottomSheet(
       context: context,
@@ -1004,6 +915,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen>
         return Icons.card_giftcard;
     }
   }
+  */
 }
 
 class _TransactionDetailsSheet extends ConsumerWidget {
@@ -1021,7 +933,7 @@ class _TransactionDetailsSheet extends ConsumerWidget {
     String? locale;
     String currency = 'USD';
     userAsync.whenData((user) {
-      // If you add locale/currency to user, use them here
+      // If you add locale/currency to user, update them here
     });
     locale ??= Localizations.localeOf(context).toString();
     final articlesAsync = ref.watch(
@@ -1059,9 +971,9 @@ class _TransactionDetailsSheet extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Transaction Details',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1120,7 +1032,7 @@ class _TransactionDetailsSheet extends ConsumerWidget {
                   'Date & Time',
                   DateFormat(
                     'MMMM dd, yyyy • HH:mm',
-                  ).format(transaction.timestamp),
+                  ).format(transaction.timestamp!),
                 ),
                 _buildDetailRow(
                   'Reference Number',

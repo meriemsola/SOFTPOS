@@ -35,27 +35,10 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
       answer:
           'On the login screen, tap "Forgot Password?" and enter your email address. You\'ll receive instructions to reset your password.',
     ),
-    FAQItem(
-      category: 'Rewards',
-      question: 'How do I earn loyalty points?',
-      answer:
-          'You can earn loyalty points by making purchases, referring friends, completing challenges, and participating in special promotions.',
-    ),
-    FAQItem(
-      category: 'Rewards',
-      question: 'When do my points expire?',
-      answer:
-          'Loyalty points expire 12 months from the date they were earned. You can check your points expiration date in your profile.',
-    ),
-    FAQItem(
-      category: 'Rewards',
-      question: 'How do I redeem my points?',
-      answer:
-          'Go to the Rewards section, browse available rewards, and tap "Claim" on the reward you want. Make sure you have enough points.',
-    ),
+
     FAQItem(
       category: 'Cards',
-      question: 'How do I add a loyalty card?',
+      question: 'How do I add a card?',
       answer:
           'Go to the Cards section and tap "Add Card". Enter your card details or scan the barcode if available.',
     ),
@@ -63,7 +46,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
       category: 'Cards',
       question: 'Can I have multiple cards?',
       answer:
-          'Currently, you can have one active loyalty card per account. Contact support if you need to change your card.',
+          'Currently, you can have one active  card per account. Contact support if you need to change your card.',
     ),
     FAQItem(
       category: 'Transactions',
@@ -71,12 +54,7 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
       answer:
           'Your transaction history is available in the Transactions tab. You can filter by date and transaction type.',
     ),
-    FAQItem(
-      category: 'Technical',
-      question: 'The app is running slowly, what should I do?',
-      answer:
-          'Try closing and reopening the app. If the problem persists, clear the app cache in Settings > Data & Storage > Clear Cache.',
-    ),
+
     FAQItem(
       category: 'Technical',
       question: 'I\'m not receiving notifications',
@@ -134,75 +112,8 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
           child: Column(
             children: [
               // Search Bar
-              Padding(
-                padding: const EdgeInsets.all(AppSizes.md),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _filterFAQs,
-                  decoration: InputDecoration(
-                    hintText: 'Search for help...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon:
-                        _searchController.text.isNotEmpty
-                            ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                _filterFAQs('');
-                              },
-                            )
-                            : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor:
-                        isDark ? AppColors.darkCard : AppColors.lightCard,
-                  ),
-                ),
-              ),
 
               // Quick Actions
-              if (_searchController.text.isEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Quick Actions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: AppSizes.sm),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: QuickActionCard(
-                              icon: Icons.chat_bubble_outline,
-                              title: 'Live Chat',
-                              subtitle: 'Chat with support',
-                              onTap: _startLiveChat,
-                            ),
-                          ),
-                          const SizedBox(width: AppSizes.sm),
-                          Expanded(
-                            child: QuickActionCard(
-                              icon: Icons.email_outlined,
-                              title: 'Email Us',
-                              subtitle: 'Send us an email',
-                              onTap: _sendEmail,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSizes.lg),
-                    ],
-                  ),
-                ),
-              ],
 
               // FAQ List
               Expanded(
@@ -380,47 +291,6 @@ class _HelpCenterScreenState extends ConsumerState<HelpCenterScreen> {
                     ],
                   ),
                 ),
-          ),
-    );
-  }
-
-  void _sendEmail() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Contact Support'),
-            content: const Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Send us an email at:'),
-                SizedBox(height: 8),
-                SelectableText(
-                  'support@fideligo.com',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                SizedBox(height: 16),
-                Text('We typically respond within 24 hours.'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => context.pop(),
-                child: const Text('Close'),
-              ),
-              TextButton(
-                onPressed: () {
-                  context.pop();
-                  ToastHelper.showInfo('Opening email app...');
-                  // TODO: Implement email app opening
-                },
-                child: const Text('Open Email'),
-              ),
-            ],
           ),
     );
   }

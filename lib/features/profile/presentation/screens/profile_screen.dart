@@ -8,7 +8,6 @@ import 'package:hce_emv/theme/app_colors.dart';
 import 'package:hce_emv/theme/app_sizes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hce_emv/shared/presentation/widgets/skeletons.dart';
-import 'package:hce_emv/shared/presentation/widgets/loyalty_status.dart';
 import 'package:hce_emv/shared/presentation/widgets/gradient_background.dart';
 import 'package:hce_emv/shared/presentation/widgets/card_container.dart';
 import 'package:hce_emv/shared/presentation/widgets/profile_shared_widgets.dart';
@@ -139,16 +138,6 @@ class ProfileScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(height: AppSizes.md),
-                                // Loyalty status section
-                                userState.when(
-                                  data:
-                                      (user) =>
-                                          user == null
-                                              ? const SizedBox.shrink()
-                                              : LoyaltyStatus(user: user),
-                                  loading: () => const SizedBox.shrink(),
-                                  error: (_, __) => const SizedBox.shrink(),
-                                ),
                               ],
                             ),
                   ),
@@ -364,7 +353,7 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.email_outlined, color: AppColors.primary),
                     SizedBox(width: 8),
-                    Text('support@fideligo.com'),
+                    Text('support@HBTLitePay.com'),
                   ],
                 ),
                 SizedBox(height: 8),
@@ -372,7 +361,7 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.phone_outlined, color: AppColors.primary),
                     SizedBox(width: 8),
-                    Text('+213 123 456 789'),
+                    Text('+213 555 476 004'),
                   ],
                 ),
                 SizedBox(height: 16),

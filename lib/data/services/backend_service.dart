@@ -9,7 +9,7 @@ class BackendService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:9000/cards/validate'),
+        Uri.parse('https://hb-backend-kmns.onrender.com:9000/cards/validate'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'pan': pan, 'cvv': cvv, 'expiryDate': expiryDate}),
       );

@@ -173,7 +173,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                     children: [
                       // Flexible spacer that shrinks when needed
                       const Flexible(child: SizedBox(height: 20)),
-                      _buildLogo(isDark),
+
                       const SizedBox(height: 24), // Reduced from 32
                       _buildHeader(),
                       const SizedBox(height: 32), // Reduced from 48
@@ -193,44 +193,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
     );
   }
 
-  Widget _buildLogo(bool isDark) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          width: 90,
-          height: 90,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.secondary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.star_half_rounded,
-            size: 50,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildHeader() {
     return SlideTransition(
       position: _slideAnimation,
@@ -244,7 +206,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                     colors: [AppColors.primary, AppColors.secondary],
                   ).createShader(bounds),
               child: Text(
-                'Fideligo',
+                'HBT Lite Pay',
                 style: context.textTheme.headlineLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontSize: 36,
@@ -254,17 +216,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Earn rewards. Get more.',
-              style: context.textTheme.titleMedium?.copyWith(
-                color:
-                    Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : const Color(0xFF64748B),
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
           ],
         ),
       ),
@@ -326,13 +277,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Text(
-            'Join us and start earning rewards',
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: isDark ? Colors.white60 : const Color(0xFF64748B),
-            ),
-            textAlign: TextAlign.center,
-          ),
+
           const SizedBox(height: 32),
           _buildNameField(),
           const SizedBox(height: 20),

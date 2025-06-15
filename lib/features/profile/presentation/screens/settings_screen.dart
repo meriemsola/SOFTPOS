@@ -155,12 +155,7 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => _navigateToChangePassword(context),
           ),
           const Divider(height: 1),
-          _buildSettingTile(
-            icon: Icons.fingerprint,
-            title: 'Biometric Authentication',
-            subtitle: 'Use fingerprint or face ID to unlock',
-            onTap: () => _showBiometricSettings(context, ref),
-          ),
+
           const Divider(height: 1),
           _buildSettingTile(
             icon: Icons.security_outlined,
@@ -169,12 +164,6 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => _navigateToTwoFactor(context),
           ),
           const Divider(height: 1),
-          _buildSettingTile(
-            icon: Icons.devices_outlined,
-            title: 'Manage Devices',
-            subtitle: 'See where you\'re logged in',
-            onTap: () => _navigateToDeviceManagement(context),
-          ),
         ],
       ),
     );

@@ -3,7 +3,6 @@ import 'package:hce_emv/core/routes/app_route.dart';
 import 'package:hce_emv/core/routes/page_transitions.dart';
 import 'package:hce_emv/features/articles/presentation/screens/articles_screen.dart';
 import 'package:hce_emv/features/cards/presentation/screens/card_screen.dart';
-import 'package:hce_emv/features/home/presentation/screens/home_screen.dart';
 import 'package:hce_emv/features/authentication/presentation/screens/signin_screen.dart';
 import 'package:hce_emv/features/authentication/presentation/screens/signup_screen.dart';
 import 'package:hce_emv/features/authentication/presentation/screens/verification_screen.dart';
@@ -20,6 +19,10 @@ import 'package:hce_emv/features/transactions/presentation/screens/transactions_
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hce_emv/presentation/screens/card_result_screen.dart';
+import 'package:hce_emv/presentation/screens/card_validation_screen.dart';
+import 'package:hce_emv/presentation/screens/my_cards_screen.dart'
+    hide CardScreen;
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -128,6 +131,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             (context, state) =>
                 SlideRightTransitionPage(child: const HelpCenterScreen()),
       ),
+      GoRoute(
+        path: AppRoutes.CardValidation.path,
+        name: AppRoutes.CardValidation.name,
+        pageBuilder:
+            (context, state) =>
+                SlideRightTransitionPage(child: const CardValidationScreen()),
+      ),
 
       // Tabbed Routes (with bottom navigation)
       ShellRoute(
@@ -142,7 +152,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.home.path,
             name: AppRoutes.home.name,
-            builder: (context, state) => const HomeScreen(),
+            builder: (context, state) => const MyHomePage(),
           ),
           // Articles Tab
           GoRoute(
@@ -169,6 +179,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.profile.path,
             name: AppRoutes.profile.name,
             builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/mycards',
+            name: 'mycards',
+            pageBuilder:
+                (context, state) =>
+                    FadeTransitionPage(child: const MyCardsScreen()),
           ),
         ],
       ),

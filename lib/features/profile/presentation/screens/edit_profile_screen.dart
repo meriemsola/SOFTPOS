@@ -237,36 +237,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
             const SizedBox(height: AppSizes.xl),
 
-            // Account Information Section
-            SectionHeader('Account Information'),
-            const SizedBox(height: AppSizes.md),
-            InfoCard(
-              label: 'Auth Provider',
-              value: user.authProvider.name,
-              icon: Icons.security_outlined,
-            ),
-
-            const SizedBox(height: AppSizes.xl),
-
-            // Loyalty Information Section
-            SectionHeader('Loyalty Information'),
-            const SizedBox(height: AppSizes.md),
-
-            InfoCard(
-              label: 'Loyalty Points',
-              value: '${user.loyaltyPoints} pts',
-              icon: Icons.stars_outlined,
-            ),
-            const SizedBox(height: AppSizes.sm),
-            if (user.pointsExpirationDate != null)
-              InfoCard(
-                label: 'Points Expiration',
-                value: _formatDate(user.pointsExpirationDate!),
-                icon: Icons.schedule_outlined,
-              ),
-
-            const SizedBox(height: AppSizes.xl * 2),
-
             // Save Button at the bottom
             Center(
               child: SizedBox(

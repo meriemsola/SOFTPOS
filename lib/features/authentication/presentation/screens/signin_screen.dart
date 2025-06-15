@@ -1,14 +1,13 @@
+import 'package:go_router/go_router.dart';
 import 'package:hce_emv/core/extensions/context_extensions.dart';
 import 'package:hce_emv/core/routes/app_route.dart';
 import 'package:hce_emv/core/utils/helpers/toast_helper.dart';
 import 'package:hce_emv/features/authentication/presentation/controllers/signin_controller.dart';
 import 'package:hce_emv/features/authentication/presentation/states/auth_state.dart';
 import 'package:hce_emv/theme/app_colors.dart';
-import 'package:hce_emv/theme/theme_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -22,7 +21,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _obscurePassword = true;
+  final bool _obscurePassword = true;
   bool _showEmailForm = false;
 
   late AnimationController _slideController;
@@ -147,17 +146,18 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
             height: size.height,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isDark
-                    ? [
-                        const Color(0xFF0F1419),
-                        const Color(0xFF1A1F25),
-                        const Color(0xFF121418),
-                      ]
-                    : [
-                        const Color(0xFFE3F2FD),
-                        const Color(0xFFBBDEFB),
-                        const Color(0xFF90CAF9),
-                      ],
+                colors:
+                    isDark
+                        ? [
+                          const Color(0xFF0F1419),
+                          const Color(0xFF1A1F25),
+                          const Color(0xFF121418),
+                        ]
+                        : [
+                          const Color(0xFFE3F2FD),
+                          const Color(0xFFBBDEFB),
+                          const Color(0xFF90CAF9),
+                        ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -183,9 +183,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
     return Column(
       children: [
         ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [AppColors.primary, AppColors.secondary],
-          ).createShader(bounds),
+          shaderCallback:
+              (bounds) => LinearGradient(
+                colors: [AppColors.primary, AppColors.secondary],
+              ).createShader(bounds),
           child: Text(
             'HBT Lite Pay',
             style: TextStyle(
@@ -199,10 +200,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         const SizedBox(height: 8),
         Text(
           'Sign in to continue',
-          style: TextStyle(
-            color: Colors.white60,
-            fontSize: 16,
-          ),
+          style: TextStyle(color: Colors.white60, fontSize: 16),
           textAlign: TextAlign.center,
         ),
       ],
@@ -216,8 +214,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
         children: [
           _buildTextField(_emailController, 'Email', Icons.email_outlined),
           const SizedBox(height: 16),
-          _buildTextField(_passwordController, 'Password', Icons.lock_outline,
-              obscureText: _obscurePassword),
+          _buildTextField(
+            _passwordController,
+            'Password',
+            Icons.lock_outline,
+            obscureText: _obscurePassword,
+          ),
           const SizedBox(height: 24),
           _buildSignInButton(),
         ],
@@ -237,9 +239,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       decoration: InputDecoration(
         hintText: hintText,
         prefixIcon: Icon(prefixIcon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       validator: (value) {
         if (value?.isEmpty ?? true) {
@@ -255,9 +255,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       onPressed: _signIn,
       style: ElevatedButton.styleFrom(
         padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       child: Text('Sign In', style: TextStyle(fontWeight: FontWeight.bold)),
     );
@@ -269,13 +267,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen>
       children: [
         Text(
           "Don't have an account? ",
-          style: TextStyle(
-            color: isDark ? Colors.white60 : Color(0xFF64748B),
-          ),
+          style: TextStyle(color: isDark ? Colors.white60 : Color(0xFF64748B)),
         ),
         GestureDetector(
           onTap: () {
-            // Navigate to SignUp page
+            context.goNamed(AppRoutes.signup.name);
           },
           child: Text(
             'Sign Up',

@@ -211,23 +211,32 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen>
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            child: Container(
-              height: size.height - MediaQuery.of(context).padding.top,
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  _buildBackButton(),
-                  const Spacer(),
-                  _buildEmailIcon(isDark),
-                  const SizedBox(height: 32),
-                  _buildHeader(),
-                  const SizedBox(height: 48),
-                  _buildMainContent(isDark, state),
-                  const SizedBox(height: 24),
-                  _buildFooter(),
-                  const Spacer(),
-                ],
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: size.height - MediaQuery.of(context).padding.top,
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    _buildBackButton(),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildEmailIcon(isDark),
+                          const SizedBox(height: 32),
+                          _buildHeader(),
+                          const SizedBox(height: 48),
+                          _buildMainContent(isDark, state),
+                          const SizedBox(height: 24),
+                          _buildFooter(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

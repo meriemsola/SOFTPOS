@@ -65,7 +65,7 @@ class AppTheme {
       ),
       textStyle: TextStyle(color: Colors.white, fontSize: 14),
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: AppColors.lightCard,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 8,
@@ -130,7 +130,7 @@ class AppTheme {
       ),
       textStyle: TextStyle(color: AppColors.darkDarkText, fontSize: 14),
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: AppColors.darkCard,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 8,

@@ -43,4 +43,9 @@ class AppRoutes {
     name: 'device-management',
     path: '/device-management',
   );
+
+  static const CardValidation = Route(
+    name: 'card-validation',
+    path: '/card-validation',
+  );
 }
