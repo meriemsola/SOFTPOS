@@ -48,4 +48,5 @@ class AppRoutes {
     name: 'card-validation',
     path: '/card-validation',
   );
+  static const MyNfc = Route(name: 'mynfc', path: '/mynfc');
 }

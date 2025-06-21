@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:hce_emv/features/Softpos/models/transaction_log_model.dart';
 import 'package:hce_emv/features/Softpos/transaction_storage.dart';
 
-class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+
+class TransactionHistoryPage extends StatefulWidget {
+  const TransactionHistoryPage({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  State<TransactionHistoryPage> createState() => _TransactionHistoryPageState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   List<TransactionLog> transactions = [];
 
   @override
@@ -19,42 +20,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadTransactions() async {
-    try {
-      print('📌 Chargement des transactions pour HistoryScreen');
-      final data = await TransactionStorage.loadTransactions();
-      setState(() {
-        transactions = data.reversed.toList();
-      });
-    } catch (e) {
-      print('❌ Erreur lors du chargement des transactions : $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erreur lors du chargement de l\'historique')),
-      );
-    }
+    final data = await TransactionStorage.loadTransactions();
+    setState(() {
+      transactions = data.reversed.toList();
+    });
   }
 
   Future<void> _clearHistory() async {
-    try {
-      await TransactionStorage.clearTransactions();
-      setState(() {
-        transactions.clear();
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Historique effacé avec succès')),
-      );
-    } catch (e) {
-      print('❌ Erreur lors de la suppression de l\'historique : $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erreur lors de la suppression de l\'historique')),
-      );
-    }
+    await TransactionStorage.clearTransactions();
+    setState(() {
+      transactions.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Historique effacé avec succès')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Historique'),
+        title: const Text('Historique des Transactions'),
         centerTitle: true,
         actions: [
           IconButton(
@@ -123,19 +109,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
-                        // Vérifie si la route '/transactionDetail' existe dans ton projet
-                        try {
-                          Navigator.pushNamed(
-                            context,
-                            '/transactionDetail',
-                            arguments: tx,
-                          );
-                        } catch (e) {
-                          print('❌ Erreur de navigation vers transactionDetail : $e');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Page de détails non disponible')),
-                          );
-                        }
+                        Navigator.pushNamed(
+                          context,
+                          '/transactionDetail',
+                          arguments: tx,
+                        );
                       },
                     ),
                   );

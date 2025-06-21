@@ -101,13 +101,7 @@ class _ScaffoldNavigationState extends ConsumerState<ScaffoldNavigation>
       route: '/home',
       semanticLabel: 'Navigate to Home tab',
     ),
-    NavigationItem(
-      outlinedIcon: Icons.credit_card_outlined, // Icône pour "Mes Cartes"
-      filledIcon: Icons.credit_card_rounded, // Icône pour "Mes Cartes"
-      label: 'Cards', // Nouveau label pour "Cards"
-      route: '/mycards', // La route vers ta nouvelle page "MyCards"
-      semanticLabel: 'Navigate to Cards tab',
-    ),
+   
     NavigationItem(
       outlinedIcon: Icons.history_outlined,
       filledIcon: Icons.history_rounded,

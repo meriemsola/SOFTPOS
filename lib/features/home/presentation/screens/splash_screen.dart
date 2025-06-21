@@ -1,4 +1,3 @@
-// lib/features/splash/splash_screen.dart
 import 'package:hce_emv/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
@@ -13,17 +12,13 @@ class SplashScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFFE6F0FF), // Light blue gradient start
-              const Color(0xFFD1E3FF), // Light blue gradient end
-            ],
+            colors: [const Color(0xFFE6F0FF), const Color(0xFFD1E3FF)],
           ),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // App logo
               Container(
                 width: 100,
                 height: 100,
@@ -40,7 +35,7 @@ class SplashScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    Icons.star_half_rounded,
+                    Icons.credit_card,
                     size: 60,
                     color: AppColors.primary,
                   ),
@@ -49,7 +44,7 @@ class SplashScreen extends StatelessWidget {
               const SizedBox(height: 24),
               // App name
               Text(
-                'Fideligo',
+                'HBT Lite Pay',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -58,7 +53,7 @@ class SplashScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Earn rewards. Get more.',
+                'Fast pay. No delay.',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.black.withOpacity(0.6),

@@ -1,20 +1,14 @@
 import 'package:hce_emv/core/extensions/context_extensions.dart';
-// import 'package:hce_emv/features/rewards/domain/models/reward.dart';
-// import 'package:hce_emv/features/rewards/presentation/controllers/user_rewards_controller.dart';
+import 'package:hce_emv/features/Softpos/transaction_storage.dart';
 import 'package:hce_emv/features/transactions/domain/models/transaction.dart';
-import 'package:hce_emv/features/transactions/presentation/controllers/transactions_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hce_emv/shared/presentation/widgets/skeletons.dart';
 import 'package:hce_emv/shared/presentation/widgets/gradient_background.dart';
-import '../widgets/transaction_card.dart';
-import '../widgets/transaction_filter_bar.dart';
-// import '../widgets/reward_filter_bar.dart';
-// import 'package:hce_emv/features/rewards/presentation/screens/rewards_screen.dart' show EnhancedRewardListCard, EnhancedRewardDetailsSheet;
+import 'package:hce_emv/features/transactions/presentation/widgets/transaction_card.dart';
+import 'package:hce_emv/features/transactions/presentation/widgets/transaction_filter_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:hce_emv/theme/app_colors.dart';
 import 'package:hce_emv/core/utils/helpers/currency_helper.dart';
-import 'package:hce_emv/shared/providers/global_providers.dart';
 
 enum TransactionSortBy {
   dateDesc,
@@ -35,14 +29,14 @@ enum TransactionFilter {
   custom,
 }
 
-class TransactionsScreen extends ConsumerStatefulWidget {
+class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
 
   @override
-  ConsumerState<TransactionsScreen> createState() => _TransactionsScreenState();
+  State<TransactionsScreen> createState() => _TransactionsScreenState();
 }
 
-class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
+class _TransactionsScreenState extends State<TransactionsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   TransactionSortBy _sortBy = TransactionSortBy.dateDesc;
@@ -58,42 +52,91 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   TransactionSortBy? _lastSortBy;
   TransactionFilter? _lastFilter;
   DateTimeRange? _lastCustomDateRange;
+  List<Transaction> _transactions = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text;
-      });
-    });
+    _loadTransactions();
+    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
+  Future<void> _loadTransactions() async {
+    setState(() {
+      _isLoading = true;
+    });
+    final transactionLogs = await TransactionStorage.loadTransactions();
+    setState(() {
+      _transactions =
+          transactionLogs
+              .asMap()
+              .entries
+              .map(
+                (entry) => Transaction(
+                  id: entry.key,
+                  userId: 0,
+                  referenceNumber: entry.value.dateTime,
+                  authorizationCode:
+                      entry.value.isOnline ? entry.value.atc : 'AUTH1234',
+                  responseCode: entry.value.status == 'Approved' ? '00' : 'N/A',
+                  pan: entry.value.pan,
+                  timestamp: entry.value.timestamp,
+                  amount: entry.value.amount,
+                ),
+              )
+              .toList();
+      _updateFilteredAndGrouped(_transactions);
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _clearHistory() async {
+    await TransactionStorage.clearTransactions();
+    setState(() {
+      _transactions.clear();
+      _filteredTransactions.clear();
+      _groupedTransactions.clear();
+      _lastTransactions = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Historique effacé avec succès')),
+    );
+  }
+
   void _updateFilteredAndGrouped(List<Transaction> transactions) {
-    if (_lastTransactions == transactions &&
-        _lastSearchQuery == _searchQuery &&
-        _lastSortBy == _sortBy &&
-        _lastFilter == _filter &&
-        _lastCustomDateRange == _customDateRange) {
-      return; // No change, skip recomputation
+    // Force update if any parameter has changed
+    if (_lastTransactions != transactions ||
+        _lastSearchQuery != _searchQuery ||
+        _lastSortBy != _sortBy ||
+        _lastFilter != _filter ||
+        _lastCustomDateRange != _customDateRange) {
+      _filteredTransactions = _filterAndSortTransactions(transactions);
+      _groupedTransactions = _groupTransactionsByDate(_filteredTransactions);
+      _lastTransactions = transactions;
+      _lastSearchQuery = _searchQuery;
+      _lastSortBy = _sortBy;
+      _lastFilter = _filter;
+      _lastCustomDateRange = _customDateRange;
+      setState(() {}); // Force UI update
     }
-    _filteredTransactions = _filterAndSortTransactions(transactions);
-    _groupedTransactions = _groupTransactionsByDate(_filteredTransactions);
-    _lastTransactions = transactions;
-    _lastSearchQuery = _searchQuery;
-    _lastSortBy = _sortBy;
-    _lastFilter = _filter;
-    _lastCustomDateRange = _customDateRange;
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text;
+      _updateFilteredAndGrouped(_transactions);
+    });
   }
 
   List<Transaction> _filterAndSortTransactions(List<Transaction> transactions) {
-    // Apply date filter
     List<Transaction> filtered =
         transactions.where((tx) {
           final now = DateTime.now();
@@ -125,7 +168,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           }
         }).toList();
 
-    // Apply search filter
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
       filtered =
@@ -137,7 +179,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           }).toList();
     }
 
-    // Apply sorting
     switch (_sortBy) {
       case TransactionSortBy.dateDesc:
         filtered.sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -149,13 +190,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         filtered.sort((a, b) => b.amount.abs().compareTo(a.amount.abs()));
         break;
       case TransactionSortBy.amountAsc:
-        filtered.sort((a, b) => a.amount.abs().compareTo(a.amount.abs()));
+        filtered.sort((a, b) => a.amount.abs().compareTo(b.amount.abs()));
         break;
       case TransactionSortBy.referenceAsc:
         filtered.sort((a, b) => a.referenceNumber.compareTo(b.referenceNumber));
         break;
       case TransactionSortBy.referenceDesc:
-        filtered.sort((a, b) => b.referenceNumber.compareTo(a.referenceNumber));
+        filtered.sort((a, b) => b.referenceNumber.compareTo(b.referenceNumber));
         break;
     }
 
@@ -169,32 +210,30 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     for (final transaction in transactions) {
       String key;
       final now = DateTime.now();
-      final difference = now.difference(transaction.timestamp!).inDays;
+      final difference = now.difference(transaction.timestamp).inDays;
 
       if (difference == 0) {
         key = 'Today';
       } else if (difference == 1) {
         key = 'Yesterday';
       } else if (difference < 7) {
-        key = DateFormat('EEEE').format(transaction.timestamp!);
+        key = DateFormat('EEEE').format(transaction.timestamp);
       } else {
-        key = DateFormat('MMM dd, yyyy').format(transaction.timestamp!);
+        key = DateFormat('MMM dd, yyyy').format(transaction.timestamp);
       }
 
       grouped.putIfAbsent(key, () => []).add(transaction);
     }
-
     return grouped;
   }
 
   double _calculateTotalAmount(List<Transaction> transactions) {
-    return transactions.fold(0.0, (sum, tx) => sum + tx.amount.abs());
+    return transactions.fold(0.0, (sum, tx) => sum + tx.amount);
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
-    final transactionsAsync = ref.watch(transactionsControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -217,9 +256,38 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
-            onPressed: () async {
-              await ref.read(transactionsControllerProvider.notifier).refresh();
-              // await ref.read(userRewardsControllerProvider.notifier).refresh();
+            onPressed: _loadTransactions,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_forever),
+            tooltip: 'Clear History',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Confirm Deletion'),
+                      content: const Text(
+                        'Do you want to clear the entire transaction history?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            _clearHistory();
+                            Navigator.pop(context);
+                          },
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+              );
             },
           ),
         ],
@@ -229,21 +297,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 8,
                 ),
                 child: TransactionFilterBar(controller: _searchController),
-                /*
-                child: _tabController.index == 0
-                    ? TransactionFilterBar(controller: _searchController)
-                    : RewardFilterBar(controller: _searchController),
-                */
               ),
-
-              // Filter Options (when expanded)
               if (_showFilters)
                 Container(
                   margin: const EdgeInsets.symmetric(
@@ -265,7 +325,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Sort Options
                       const Text(
                         'Sort by',
                         style: TextStyle(
@@ -305,8 +364,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-
-                      // Filter Options
                       const Text(
                         'Filter by date',
                         style: TextStyle(
@@ -346,8 +403,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           ),
                         ],
                       ),
-
-                      // Custom Date Range Picker
                       if (_filter == TransactionFilter.custom)
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
@@ -365,6 +420,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                     if (range != null) {
                                       setState(() {
                                         _customDateRange = range;
+                                        _updateFilteredAndGrouped(
+                                          _transactions,
+                                        );
                                       });
                                     }
                                   },
@@ -382,6 +440,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                   onPressed: () {
                                     setState(() {
                                       _customDateRange = null;
+                                      _updateFilteredAndGrouped(_transactions);
                                     });
                                   },
                                   icon: const Icon(Icons.clear),
@@ -393,411 +452,123 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     ],
                   ),
                 ),
-
               Expanded(
-                child: transactionsAsync.when(
-                  data: (transactions) {
-                    _updateFilteredAndGrouped(transactions);
-                    final filtered = _filteredTransactions;
-                    final totalAmount = _calculateTotalAmount(filtered);
-                    if (filtered.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.receipt_long,
-                              size: 64,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No transactions found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade600,
+                child:
+                    _isLoading
+                        ? ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: 6,
+                          itemBuilder:
+                              (context, index) => const Padding(
+                                padding: EdgeInsets.only(bottom: 12),
+                                child: SkeletonTransactionItem(),
                               ),
-                            ),
-                            if (_searchQuery.isNotEmpty ||
-                                _filter != TransactionFilter.all)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: TextButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _searchQuery = '';
-                                      _searchController.clear();
-                                      _filter = TransactionFilter.all;
-                                      _customDateRange = null;
-                                    });
-                                  },
-                                  child: const Text('Clear filters'),
+                        )
+                        : _filteredTransactions.isEmpty
+                        ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.receipt_long,
+                                size: 64,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No transactions found',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
                                 ),
                               ),
-                          ],
-                        ),
-                      );
-                    }
+                              if (_searchQuery.isNotEmpty ||
+                                  _filter != TransactionFilter.all)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _searchQuery = '';
+                                        _searchController.clear();
+                                        _filter = TransactionFilter.all;
+                                        _customDateRange = null;
+                                        _updateFilteredAndGrouped(
+                                          _transactions,
+                                        );
+                                      });
+                                    },
+                                    child: const Text('Clear filters'),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        )
+                        : ListView.builder(
+                          // Changed to ListView.builder for better scrolling
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _groupedTransactions.length,
+                          itemBuilder: (context, index) {
+                            final entry = _groupedTransactions.entries
+                                .elementAt(index);
+                            final dateKey = entry.key;
+                            final dayTransactions = entry.value;
+                            final dayTotal = _calculateTotalAmount(
+                              dayTransactions,
+                            );
 
-                    final groupedTransactions = _groupedTransactions;
-
-                    return Column(
-                      children: [
-                        // Summary Card
-                        if (filtered.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.all(16),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.primary.withOpacity(0.1),
-                                  AppColors.secondary.withOpacity(0.05),
-                                ],
-                              ),
-                              borderRadius: const BorderRadius.all(
-                                Radius.circular(16),
-                              ),
-                              border: Border.all(
-                                color: AppColors.primary.withOpacity(0.2),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${filtered.length} Transaction${filtered.length == 1 ? '' : 's'}',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        dateKey,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      _getFilterDescription(),
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12,
+                                      Text(
+                                        CurrencyHelper.format(dayTotal),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.green,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Total Amount',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12,
-                                      ),
+                                ...dayTransactions.asMap().entries.map((entry) {
+                                  final i = entry.key;
+                                  final tx = entry.value;
+                                  return Padding(
+                                    key: ValueKey(tx.id),
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: TransactionCard(
+                                      transaction: tx,
+                                      onTap:
+                                          () => _showTransactionDetails(
+                                            context,
+                                            tx,
+                                          ),
+                                      animationIndex: i < 10 ? i : null,
+                                      onDelete: () async {},
                                     ),
-                                    Text(
-                                      CurrencyHelper.format(totalAmount),
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  );
+                                }),
+                                const SizedBox(height: 8),
                               ],
-                            ),
-                          ),
-
-                        // Grouped Transaction List
-                        Expanded(
-                          child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: groupedTransactions.length,
-                            itemBuilder: (context, index) {
-                              final entry = groupedTransactions.entries
-                                  .elementAt(index);
-                              final dateKey = entry.key;
-                              final dayTransactions = entry.value;
-                              final dayTotal = _calculateTotalAmount(
-                                dayTransactions,
-                              );
-
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Date Header
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          dateKey,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          CurrencyHelper.format(dayTotal),
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Day's Transactions
-                                  ...dayTransactions.asMap().entries.map((
-                                    entry,
-                                  ) {
-                                    final i = entry.key;
-                                    final tx = entry.value;
-                                    return Padding(
-                                      key: ValueKey(tx.id),
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: TransactionCard(
-                                        transaction: tx,
-                                        onTap:
-                                            () => _showTransactionDetails(
-                                              context,
-                                              tx,
-                                            ),
-                                        animationIndex: i < 10 ? i : null,
-                                      ),
-                                    );
-                                  }),
-
-                                  const SizedBox(height: 8),
-                                ],
-                              );
-                            },
-                          ),
+                            );
+                          },
                         ),
-                      ],
-                    );
-                  },
-                  loading:
-                      () => ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: 6,
-                        itemBuilder:
-                            (context, index) => const Padding(
-                              padding: EdgeInsets.only(bottom: 12),
-                              child: SkeletonTransactionItem(),
-                            ),
-                      ),
-                  error:
-                      (error, stack) => Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 64,
-                              color: Colors.red.shade300,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text('Error loading transactions'),
-                            const SizedBox(height: 8),
-                            TextButton(
-                              onPressed:
-                                  () => ref.refresh(
-                                    transactionsControllerProvider,
-                                  ),
-                              child: const Text('Try Again'),
-                            ),
-                          ],
-                        ),
-                      ),
-                ),
-                /*
-                // Rewards Tab
-                userRewardsAsync.when(
-                  data: (rewards) {
-                    // Filter rewards by search query (name or category)
-                    final filteredRewards = _searchQuery.isEmpty
-                        ? rewards
-                        : rewards.where((reward) {
-                            final query = _searchQuery.toLowerCase();
-                            return reward.name.toLowerCase().contains(
-                                  query,
-                                ) ||
-                                reward.category.toLowerCase().contains(
-                                  query,
-                                );
-                          }).toList();
-                    if (filteredRewards.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.card_giftcard,
-                              size: 64,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _searchQuery.isEmpty
-                                  ? 'No claimed rewards yet'
-                                  : 'No rewards found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            if (_searchQuery.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: TextButton(
-                                  onPressed: () {
-                                    _searchController.clear();
-                                  },
-                                  child: const Text('Clear search'),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    }
-
-                    // Group rewards by category (like in rewards_screen.dart)
-                    final groupedRewards = <String, List<Reward>>{};
-                    for (final reward in filteredRewards) {
-                      if (groupedRewards.containsKey(reward.category)) {
-                        groupedRewards[reward.category]!.add(reward);
-                      } else {
-                        groupedRewards[reward.category] = [reward];
-                      }
-                    }
-                    final categories = groupedRewards.keys.toList()..sort();
-
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: categories.length,
-                      itemBuilder: (context, categoryIndex) {
-                        final category = categories[categoryIndex];
-                        final categoryRewards = groupedRewards[category]!;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (categoryIndex > 0)
-                              const SizedBox(height: 24),
-                            // Category header (copied from rewards_screen.dart)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.primary.withOpacity(0.1),
-                                    AppColors.primary.withOpacity(0.05),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: AppColors.primary.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _getCategoryIcon(category),
-                                    color: AppColors.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    category,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(
-                                        12,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      categoryRewards.length.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ...categoryRewards.map(
-                              (reward) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: EnhancedRewardListCard(
-                                  reward: reward,
-                                  isRedeemed: true,
-                                  onTap: () => _showEnhancedRewardDetails(
-                                    context,
-                                    reward,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                  loading: () => ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: 4,
-                    itemBuilder: (context, index) => const Padding(
-                      padding: EdgeInsets.only(bottom: 12),
-                      child: SkeletonRewardListItem(),
-                    ),
-                  ),
-                  error: (error, stack) => Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.red.shade300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text('Error loading rewards'),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () =>
-                              ref.refresh(userRewardsControllerProvider),
-                          child: const Text('Try Again'),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                */
               ),
             ],
           ),
@@ -815,6 +586,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         if (selected) {
           setState(() {
             _sortBy = sortBy;
+            _updateFilteredAndGrouped(_transactions);
           });
         }
       },
@@ -835,6 +607,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             if (filter != TransactionFilter.custom) {
               _customDateRange = null;
             }
+            _updateFilteredAndGrouped(_transactions);
           });
         }
       },
@@ -886,39 +659,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           ),
     );
   }
-
-  /*
-  void _showEnhancedRewardDetails(BuildContext context, Reward reward) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      builder: (context) => EnhancedRewardDetailsSheet(reward: reward),
-    );
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'food':
-        return Icons.restaurant;
-      case 'shopping':
-        return Icons.shopping_bag;
-      case 'travel':
-        return Icons.flight;
-      case 'entertainment':
-        return Icons.movie;
-      case 'health':
-        return Icons.health_and_safety;
-      default:
-        return Icons.card_giftcard;
-    }
-  }
-  */
 }
 
-class _TransactionDetailsSheet extends ConsumerWidget {
+class _TransactionDetailsSheet extends StatelessWidget {
   final Transaction transaction;
   final ScrollController scrollController;
 
@@ -928,17 +671,9 @@ class _TransactionDetailsSheet extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final userAsync = ref.watch(userProvider);
-    String? locale;
-    String currency = 'USD';
-    userAsync.whenData((user) {
-      // If you add locale/currency to user, update them here
-    });
-    locale ??= Localizations.localeOf(context).toString();
-    final articlesAsync = ref.watch(
-      transactionArticlesProvider(transaction.id),
-    );
+  Widget build(BuildContext context) {
+    final locale = Localizations.localeOf(context).toString();
+    const currency = 'DA';
 
     return Container(
       decoration: const BoxDecoration(
@@ -947,248 +682,113 @@ class _TransactionDetailsSheet extends ConsumerWidget {
       child: SingleChildScrollView(
         controller: scrollController,
         child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_upward,
-                      color: Colors.red,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Transaction Details',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          transaction.referenceNumber,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Amount Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.red.shade50, Colors.red.shade100],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.withOpacity(0.2)),
-                ),
-                child: Column(
+          padding: const EdgeInsets.all(12),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      'Amount',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '-${CurrencyHelper.format(transaction.amount.abs(), currencyCode: currency, locale: locale)}',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Transaction Details
-              _buildDetailSection('Transaction Information', [
-                _buildDetailRow(
-                  'Date & Time',
-                  DateFormat(
-                    'MMMM dd, yyyy • HH:mm',
-                  ).format(transaction.timestamp!),
-                ),
-                _buildDetailRow(
-                  'Reference Number',
-                  transaction.referenceNumber,
-                ),
-                _buildDetailRow(
-                  'Authorization Code',
-                  transaction.authorizationCode ?? 'N/A',
-                ),
-                _buildDetailRow(
-                  'Response Code',
-                  transaction.responseCode ?? 'N/A',
-                ),
-                _buildDetailRow(
-                  'Card Number',
-                  '****${transaction.pan?.substring(transaction.pan!.length - 4) ?? 'N/A'}',
-                ),
-              ]),
-
-              const SizedBox(height: 24),
-
-              // Articles Section
-              const Text(
-                'Purchased Items',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-
-              articlesAsync.when(
-                data: (items) {
-                  if (items.isEmpty) {
-                    return Container(
-                      padding: const EdgeInsets.all(16),
+                    Container(
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(
-                        child: Text('No items found for this transaction'),
+                      child: const Icon(
+                        Icons.arrow_upward,
+                        color: Colors.green,
+                        size: 20,
                       ),
-                    );
-                  }
-
-                  return Column(
-                    children:
-                        items
-                            .map(
-                              (item) => Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 50,
-                                      height: 50,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withOpacity(
-                                          0.1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Icon(
-                                        Icons.shopping_bag,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.article.name,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'Quantity: ${item.quantity}',
-                                            style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          CurrencyHelper.format(
-                                            item.article.price * item.quantity,
-                                            currencyCode: currency,
-                                            locale: locale,
-                                          ),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        if (item.quantity > 1)
-                                          Text(
-                                            '${CurrencyHelper.format(item.article.price, currencyCode: currency, locale: locale)} each',
-                                            style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                            .toList(),
-                  );
-                },
-                loading:
-                    () => Container(
-                      padding: const EdgeInsets.all(20),
-                      child: const Center(child: CircularProgressIndicator()),
                     ),
-                error:
-                    (e, _) => Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.error_outline, color: Colors.red.shade600),
-                          const SizedBox(width: 8),
+                          const Text(
+                            'Transaction Details',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           Text(
-                            'Failed to load items',
-                            style: TextStyle(color: Colors.red.shade600),
+                            transaction.referenceNumber,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
                     ),
-              ),
-
-              const SizedBox(height: 32),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green.shade50, Colors.green.shade100],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Amount',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '+${CurrencyHelper.format(transaction.amount.abs(), currencyCode: currency, locale: locale)}',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildDetailSection('Transaction Information', [
+                  _buildDetailRow(
+                    'Date & Time',
+                    DateFormat(
+                      'MMMM dd, yyyy • HH:mm',
+                    ).format(transaction.timestamp),
+                  ),
+                  _buildDetailRow(
+                    'Reference Number',
+                    transaction.referenceNumber,
+                  ),
+                  _buildDetailRow(
+                    'Authorization Code',
+                    transaction.authorizationCode ?? 'N/A',
+                  ),
+                  _buildDetailRow(
+                    'Response Code',
+                    transaction.responseCode ?? 'N/A',
+                  ),
+                  _buildDetailRow(
+                    'Card Number',
+                    '****${transaction.pan?.substring(transaction.pan!.length - 4) ?? 'N/A'}',
+                  ),
+                  _buildDetailRow('User ID', transaction.userId.toString()),
+                ]),
+              ],
+            ),
           ),
         ),
       ),
@@ -1201,11 +801,11 @@ class _TransactionDetailsSheet extends ConsumerWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(12),
@@ -1219,21 +819,22 @@ class _TransactionDetailsSheet extends ConsumerWidget {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 100,
             child: Text(
               label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

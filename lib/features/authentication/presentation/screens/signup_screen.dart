@@ -121,7 +121,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
           HapticFeedback.mediumImpact();
           context.goNamed(
             AppRoutes.verification.name,
-            pathParameters: {'email': _emailController.text},
+            queryParameters: {'email': _emailController.text.trim()},
           );
           ToastHelper.showInfo("Please check your email for verification code");
         },

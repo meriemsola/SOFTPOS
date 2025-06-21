@@ -1,4 +1,3 @@
-// lib/features/transactions/presentation/widgets/transaction_card.dart
 import 'package:flutter/material.dart';
 import 'package:hce_emv/features/transactions/domain/models/transaction.dart';
 import 'package:intl/intl.dart';
@@ -19,6 +18,7 @@ class TransactionCard extends ConsumerStatefulWidget {
     required this.onTap,
     this.showDate = true,
     this.animationIndex,
+    required Future<void> Function() onDelete,
   });
 
   @override
@@ -104,7 +104,7 @@ class _TransactionCardState extends ConsumerState<TransactionCard>
   }
 
   IconData _getTransactionIcon() {
-    // You can customize based on transaction type or amount
+    // Customize based on transaction type or amount
     return widget.transaction.amount < 0
         ? Icons.arrow_upward
         : Icons.arrow_downward;
@@ -248,7 +248,7 @@ class _TransactionCardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 8), // Réduit l'espace vertical
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),
         onTapUp: (_) {
@@ -262,21 +262,21 @@ class _TransactionCardContent extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: isDark ? Colors.grey.shade900 : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12), // Réduit le rayon
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
-                  blurRadius: isPressed ? 8 : 12,
-                  offset: Offset(0, isPressed ? 2 : 4),
+                  blurRadius: isPressed ? 6 : 8, // Réduit le blur
+                  offset: Offset(0, isPressed ? 1 : 2), // Réduit l'offset
                 ),
               ],
               border: Border.all(
                 color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-                width: 1,
+                width: 0.5, // Réduit l'épaisseur
               ),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               child: Stack(
                 children: [
                   // Gradient overlay
@@ -298,28 +298,34 @@ class _TransactionCardContent extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12), // Réduit le padding
                     child: Row(
                       children: [
                         // Transaction Icon
                         Container(
-                          width: 50,
-                          height: 50,
+                          width: 40, // Réduit la largeur
+                          height: 40, // Réduit la hauteur
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.green.withOpacity(
+                              0.1,
+                            ), // Changé en vert
+                            borderRadius: BorderRadius.circular(
+                              10,
+                            ), // Réduit le rayon
                             border: Border.all(
-                              color: Colors.red.withOpacity(0.2),
-                              width: 1,
+                              color: Colors.green.withOpacity(
+                                0.2,
+                              ), // Changé en vert
+                              width: 0.5, // Réduit l'épaisseur
                             ),
                           ),
                           child: Icon(
                             _getTransactionIcon(),
-                            color: Colors.red,
-                            size: 22,
+                            color: Colors.green, // Changé en vert
+                            size: 18, // Réduit la taille
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12), // Réduit l'espace
                         // Transaction Details
                         Expanded(
                           child: Column(
@@ -332,7 +338,7 @@ class _TransactionCardContent extends StatelessWidget {
                                       transaction.referenceNumber,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                        fontSize: 14, // Réduit la taille
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -340,17 +346,19 @@ class _TransactionCardContent extends StatelessWidget {
                                   // Status Badge
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
+                                      horizontal: 6, // Réduit l'horizontal
+                                      vertical: 2, // Réduit le vertical
                                     ),
                                     decoration: BoxDecoration(
                                       color: _getStatusColor().withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(
+                                        6,
+                                      ), // Réduit le rayon
                                       border: Border.all(
                                         color: _getStatusColor().withOpacity(
                                           0.3,
                                         ),
-                                        width: 1,
+                                        width: 0.5, // Réduit l'épaisseur
                                       ),
                                     ),
                                     child: Text(
@@ -364,12 +372,12 @@ class _TransactionCardContent extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4), // Réduit l'espace
                               Row(
                                 children: [
                                   const Icon(
                                     Icons.access_time,
-                                    size: 14,
+                                    size: 12, // Réduit la taille
                                     color: Colors.grey,
                                   ),
                                   const SizedBox(width: 4),
@@ -380,27 +388,26 @@ class _TransactionCardContent extends StatelessWidget {
                                         ).format(transaction.timestamp)
                                         : _formatTime(transaction.timestamp),
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 10, // Réduit la taille
                                       color: Colors.grey.shade500,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              // Card info
+                              const SizedBox(height: 2), // Réduit l'espace
                               Row(
                                 children: [
                                   const Icon(
                                     Icons.credit_card,
-                                    size: 14,
+                                    size: 12, // Réduit la taille
                                     color: Colors.grey,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '****${transaction.pan?.substring(transaction.pan!.length - 4) ?? 'N/A'}',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 10, // Réduit la taille
                                       color: Colors.grey.shade500,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -410,24 +417,24 @@ class _TransactionCardContent extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8), // Réduit l'espace
                         // Amount
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '-${CurrencyHelper.format(transaction.amount.abs(), currencyCode: currency, locale: locale)}',
+                              '+${CurrencyHelper.format(transaction.amount.abs(), currencyCode: currency, locale: locale)}', // Changé en '+' et vert
                               style: const TextStyle(
-                                color: Colors.red,
+                                color: Colors.green,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                                fontSize: 16, // Réduit légèrement la taille
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2), // Réduit l'espace
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
+                                horizontal: 4, // Réduit l'horizontal
+                                vertical: 1, // Réduit le vertical
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade100,
@@ -436,7 +443,7 @@ class _TransactionCardContent extends StatelessWidget {
                               child: Text(
                                 transaction.authorizationCode ?? 'N/A',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 8, // Réduit la taille
                                   color: Colors.grey.shade600,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -452,7 +459,7 @@ class _TransactionCardContent extends StatelessWidget {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         onTap: onTap,
                         splashColor: AppColors.primary.withOpacity(0.1),
                         highlightColor: AppColors.primary.withOpacity(0.05),

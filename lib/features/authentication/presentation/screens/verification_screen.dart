@@ -221,19 +221,16 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen>
                   children: [
                     const SizedBox(height: 20),
                     _buildBackButton(),
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildEmailIcon(isDark),
-                          const SizedBox(height: 32),
-                          _buildHeader(),
-                          const SizedBox(height: 48),
-                          _buildMainContent(isDark, state),
-                          const SizedBox(height: 24),
-                          _buildFooter(),
-                        ],
-                      ),
+                    Column(
+                      children: [
+                        _buildEmailIcon(isDark),
+                        const SizedBox(height: 32),
+                        _buildHeader(),
+                        const SizedBox(height: 48),
+                        _buildMainContent(isDark, state),
+                        const SizedBox(height: 24),
+                        _buildFooter(),
+                      ],
                     ),
                   ],
                 ),

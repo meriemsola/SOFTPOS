@@ -20,10 +20,10 @@ Dio dio(Ref ref) {
   // Choose base URL based on platform
   final baseUrl =
       kIsWeb
-          ? 'https://hb-backend-kmns.onrender.com'
+          ? 'http://localhost:8080'
           : (defaultTargetPlatform == TargetPlatform.iOS
-              ? 'https://hb-backend-kmns.onrender.com'
-              : 'http://192.168.100.54:9000');
+              ? 'http://localhost:8080'
+              : 'http://192.168.100.16:8080');
 
   final dio = Dio(
     BaseOptions(

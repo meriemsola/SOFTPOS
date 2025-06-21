@@ -19,10 +19,13 @@ import 'package:hce_emv/features/transactions/presentation/screens/transactions_
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hce_emv/presentation/screens/amount_page.dart';
 import 'package:hce_emv/presentation/screens/card_result_screen.dart';
 import 'package:hce_emv/presentation/screens/card_validation_screen.dart';
 import 'package:hce_emv/presentation/screens/my_cards_screen.dart'
     hide CardScreen;
+import 'package:hce_emv/presentation/screens/nfc_waiting_page.dart';
+import 'package:hce_emv/presentation/screens/transaction_summary_page.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -83,10 +86,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             (context, state) => FadeTransitionPage(child: const SignUpScreen()),
       ),
       GoRoute(
-        path: '${AppRoutes.verification.path}/:email',
+        path: AppRoutes.verification.path,
         name: AppRoutes.verification.name,
         pageBuilder: (context, state) {
-          final email = state.pathParameters['email'] ?? '';
+          final email = state.uri.queryParameters['email'] ?? '';
           return SlideRightTransitionPage(
             child: VerificationScreen(email: email),
           );
@@ -152,7 +155,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.home.path,
             name: AppRoutes.home.name,
-            builder: (context, state) => const MyHomePage(),
+            builder: (context, state) => const AmountPage(),
           ),
           // Articles Tab
           GoRoute(
@@ -186,6 +189,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder:
                 (context, state) =>
                     FadeTransitionPage(child: const MyCardsScreen()),
+          ),
+          GoRoute(
+            path: '/mynfc',
+            name: 'mynfc',
+            pageBuilder: (context, state) {
+              final amount = state.uri.queryParameters['amount'] ?? '';
+              print('📦 Montant reçu dans la route GoRouter : $amount');
+              return MaterialPage(
+                key: state.pageKey,
+                child: NfcWaitingPage(initialAmount: amount),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/transactionSummary',
+            name: 'transactionSummary',
+            builder: (context, state) {
+              return TransactionSummaryPage();
+            },
           ),
         ],
       ),
